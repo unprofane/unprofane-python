@@ -1,0 +1,37 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "unprofane"
+version = "0.1.0"
+description = "Unprofane: a profanity and toxicity API that is hard to fool. Sync and async client with retries and a batch helper."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.9"
+authors = [{ name = "Unprofane", email = "hello@unprofane.com" }]
+keywords = ["profanity", "toxicity", "moderation", "filter", "perspective-api"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Topic :: Software Development :: Libraries",
+]
+dependencies = ["httpx>=0.25"]
+
+[project.optional-dependencies]
+test = ["pytest>=8", "pytest-asyncio>=0.23"]
+
+[project.urls]
+Homepage = "https://unprofane.com"
+Documentation = "https://unprofane.com/docs/"
+Source = "https://github.com/unprofane/unprofane-python"
+Issues = "https://github.com/unprofane/unprofane-python/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["unprofane"]
+
+[tool.hatch.build.targets.sdist]
+include = ["unprofane", "tests", "README.md", "LICENSE", "pyproject.toml"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
