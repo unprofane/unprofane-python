@@ -1,14 +1,21 @@
 import json
+import re
+from pathlib import Path
 
 import httpx
 import pytest
 
-from unprofane import AsyncUnprofane, Unprofane, UnprofaneError
+from unprofane import AsyncUnprofane, Unprofane, UnprofaneError, __version__
 from unprofane.client import backoff
 
 
 def transport(handler):
     return httpx.MockTransport(handler)
+
+
+def test_version_matches_pyproject():
+    pyproject = (Path(__file__).parent.parent / "pyproject.toml").read_text()
+    assert __version__ == re.search(r'^version = "([^"]+)"', pyproject, re.M).group(1)
 
 
 def test_check_sends_the_key_and_body():

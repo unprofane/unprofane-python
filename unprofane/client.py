@@ -12,7 +12,7 @@ from typing import Any, Dict, Iterable, List, Optional, Union
 
 import httpx
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 _DEFAULT_BASE = "https://api.unprofane.com"
 _RETRYABLE = {429, 502, 503, 504}
 _MAX_BATCH = 100
