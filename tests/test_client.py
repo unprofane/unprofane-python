@@ -67,6 +67,18 @@ def test_retries_then_raises_a_problem(monkeypatch):
     assert e.value.request_id == "req_9"
 
 
+def test_check_batch_names_the_language():
+    seen = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["body"] = json.loads(request.content)
+        return httpx.Response(200, json={"results": [], "counted": 0})
+
+    with Unprofane("up_test_abc", transport=transport(handler)) as client:
+        client.check_batch([{"id": "a", "text": "aq"}], language="tr")
+    assert seen["body"] == {"items": [{"id": "a", "text": "aq"}], "language": "tr"}
+
+
 def test_check_many_chunks_and_keeps_order():
     def handler(request: httpx.Request) -> httpx.Response:
         items = json.loads(request.content)["items"]

@@ -12,7 +12,7 @@ from typing import Any, Dict, Iterable, List, Optional, Union
 
 import httpx
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 _DEFAULT_BASE = "https://api.unprofane.com"
 _RETRYABLE = {429, 502, 503, 504}
 _MAX_BATCH = 100
@@ -123,11 +123,11 @@ class Unprofane(_Base):
         """One text: should it be allowed, with the evidence."""
         return self._call("POST", "/v1/check", _drop_none({"text": text, "context": context, "policy": policy, "mode": mode, "language": language, "mask": mask, "engine": engine, "lists": lists}))
 
-    def check_batch(self, items: List[dict], *, context: Optional[str] = None, policy: Optional[Policy] = None, mode: Optional[str] = None, mask: Optional[str] = None, engine: Optional[str] = None, lists: Optional[dict] = None) -> dict:
+    def check_batch(self, items: List[dict], *, context: Optional[str] = None, policy: Optional[Policy] = None, mode: Optional[str] = None, language: Optional[str] = None, mask: Optional[str] = None, engine: Optional[str] = None, lists: Optional[dict] = None) -> dict:
         """Up to 100 items of {id, text}, answered in order."""
         if len(items) > _MAX_BATCH:
             raise ValueError(f"check_batch takes at most {_MAX_BATCH} items; use check_many")
-        return self._call("POST", "/v1/check/batch", _drop_none({"items": items, "context": context, "policy": policy, "mode": mode, "mask": mask, "engine": engine, "lists": lists}))
+        return self._call("POST", "/v1/check/batch", _drop_none({"items": items, "context": context, "policy": policy, "mode": mode, "language": language, "mask": mask, "engine": engine, "lists": lists}))
 
     def check_many(self, texts: Iterable[str], **options: Any) -> List[dict]:
         """Any number of texts, chunked by 100, results in input order."""
@@ -137,7 +137,7 @@ class Unprofane(_Base):
         return out
 
     def feedback(self, check_id: str, verdict: str, *, expected_action: Optional[str] = None, note: Optional[str] = None, text: Optional[str] = None) -> dict:
-        """Report a wrong result. `text` is stored only if you include it."""
+        """Report a wrong result. `text` is stored with your account only if you include it."""
         return self._call("POST", "/v1/feedback", _drop_none({"check_id": check_id, "verdict": verdict, "expected_action": expected_action, "note": note, "text": text}))
 
     def usage(self) -> dict:
@@ -193,10 +193,10 @@ class AsyncUnprofane(_Base):
     async def check(self, text: str, *, context: Optional[str] = None, policy: Optional[Policy] = None, mode: Optional[str] = None, language: Optional[str] = None, mask: Optional[str] = None, engine: Optional[str] = None, lists: Optional[dict] = None) -> dict:
         return await self._call("POST", "/v1/check", _drop_none({"text": text, "context": context, "policy": policy, "mode": mode, "language": language, "mask": mask, "engine": engine, "lists": lists}))
 
-    async def check_batch(self, items: List[dict], *, context: Optional[str] = None, policy: Optional[Policy] = None, mode: Optional[str] = None, mask: Optional[str] = None, engine: Optional[str] = None, lists: Optional[dict] = None) -> dict:
+    async def check_batch(self, items: List[dict], *, context: Optional[str] = None, policy: Optional[Policy] = None, mode: Optional[str] = None, language: Optional[str] = None, mask: Optional[str] = None, engine: Optional[str] = None, lists: Optional[dict] = None) -> dict:
         if len(items) > _MAX_BATCH:
             raise ValueError(f"check_batch takes at most {_MAX_BATCH} items; use check_many")
-        return await self._call("POST", "/v1/check/batch", _drop_none({"items": items, "context": context, "policy": policy, "mode": mode, "mask": mask, "engine": engine, "lists": lists}))
+        return await self._call("POST", "/v1/check/batch", _drop_none({"items": items, "context": context, "policy": policy, "mode": mode, "language": language, "mask": mask, "engine": engine, "lists": lists}))
 
     async def check_many(self, texts: Iterable[str], *, concurrency: int = 2, **options: Any) -> List[dict]:
         import asyncio
