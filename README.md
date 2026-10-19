@@ -24,4 +24,4 @@ async with AsyncUnprofane("up_live_YOUR_KEY") as client:
     r = await client.check("hello", context="comment")
 ```
 
-`check`, `check_batch` (up to 100), `check_many` (any number, chunked), `feedback`, `usage`, `get_list`, `put_list`, `delete_list`. Retries 429 and 5xx with jitter and honours `Retry-After`; other failures raise `UnprofaneError` with the problem details and the request id. Docs: https://unprofane.com/docs/.
+`check`, `check_batch` (up to 100 texts and 30,000 characters), `check_many` (any number, chunked to fit a batch), `feedback`, `usage`, `get_list`, `put_list`, `delete_list`. Retries 429 and 5xx with jitter and honors `Retry-After`; other failures raise `UnprofaneError` with the problem details and the request id. Docs: https://unprofane.com/docs/.

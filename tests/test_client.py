@@ -94,6 +94,47 @@ def test_check_many_chunks_and_keeps_order():
     assert results[249]["id"] == "249"
 
 
+def test_check_many_chunks_by_characters_too():
+    # The API refuses a batch whose texts hold more than 30,000 characters
+    # together (2026-10-19): 100 long texts in one request were refused whole.
+    sizes = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        items = json.loads(request.content)["items"]
+        sizes.append([len(i["text"]) for i in items])
+        return httpx.Response(200, json={"results": [{"id": i["id"], "result": {"allowed": True}} for i in items], "counted": len(items)})
+
+    long = [str(i) * 10_000 for i in range(4)]
+    with Unprofane("up_live_k", transport=transport(handler)) as client:
+        results = client.check_many(long)
+        assert [len(s) for s in sizes] == [3, 1]
+        assert [r["id"] for r in results] == ["0", "1", "2", "3"]
+        sizes.clear()
+        client.check_many(["x" * 400] * 100)
+        assert [len(s) for s in sizes] == [75, 25]
+        with pytest.raises(ValueError):
+            client.check_batch([{"id": str(i), "text": t} for i, t in enumerate(long)])
+
+
+def test_async_check_many_chunks_by_characters_too():
+    import asyncio
+
+    sizes = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        items = json.loads(request.content)["items"]
+        sizes.append(len(items))
+        return httpx.Response(200, json={"results": [{"id": i["id"], "result": {"allowed": True}} for i in items], "counted": len(items)})
+
+    async def run():
+        async with AsyncUnprofane("up_live_k", transport=transport(handler)) as client:
+            return await client.check_many([str(i) * 10_000 for i in range(4)], concurrency=1)
+
+    results = asyncio.run(run())
+    assert sizes == [3, 1]
+    assert [r["id"] for r in results] == ["0", "1", "2", "3"]
+
+
 def test_backoff():
     assert backoff(1, "2") == 2.0
     assert all(backoff(5, None) <= 8.0 for _ in range(20))

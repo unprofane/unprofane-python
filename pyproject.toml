@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "unprofane"
-version = "0.1.2"
+version = "0.1.3"
 description = "Unprofane: a profanity and toxicity API that is hard to fool. Sync and async client with retries and a batch helper."
 readme = "README.md"
 license = "MIT"

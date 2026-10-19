@@ -1,5 +1,6 @@
 """The sync and async clients: one method per endpoint, retries with jitter
-on 429 and 5xx honouring Retry-After, a batch helper that chunks by 100.
+on 429 and 5xx honoring Retry-After, a batch helper that chunks by 100 texts
+and 30,000 characters.
 No dependency beyond httpx. Responses are plain dicts in the API's own
 field names (https://unprofane.com/docs/api/), so nothing here can drift
 from the contract without the contract changing."""
@@ -12,10 +13,14 @@ from typing import Any, Dict, Iterable, List, Optional, Union
 
 import httpx
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 _DEFAULT_BASE = "https://api.unprofane.com"
 _RETRYABLE = {429, 502, 503, 504}
 _MAX_BATCH = 100
+# The most characters the API reads in one batch, every text together,
+# counted as JavaScript counts a string's length (UTF-16 code units): a
+# batch over it is refused whole.
+MAX_BATCH_CHARS = 30_000
 
 Policy = Union[str, Dict[str, str]]
 
@@ -64,11 +69,38 @@ def _error(res: httpx.Response, method: str, path: str) -> UnprofaneError:
     return UnprofaneError(message, res.status_code, problem, res.headers.get("request-id"))
 
 
+def _length(text: str) -> int:
+    """A text's length as the API counts it: UTF-16 code units."""
+    return len(text.encode("utf-16-le")) // 2
+
+
+def _chars(items: List[dict]) -> int:
+    return sum(_length(i["text"]) for i in items)
+
+
 def _chunks(texts: List[str]) -> List[List[dict]]:
-    return [
-        [{"id": str(i + j), "text": text} for j, text in enumerate(texts[i : i + _MAX_BATCH])]
-        for i in range(0, len(texts), _MAX_BATCH)
-    ]
+    """Batches of up to 100 texts and MAX_BATCH_CHARS characters, in order;
+    a text longer than a batch holds goes alone (and is refused)."""
+    chunks: List[List[dict]] = []
+    chunk: List[dict] = []
+    chars = 0
+    for i, text in enumerate(texts):
+        n = _length(text)
+        if len(chunk) == _MAX_BATCH or (chunk and chars + n > MAX_BATCH_CHARS):
+            chunks.append(chunk)
+            chunk, chars = [], 0
+        chunk.append({"id": str(i), "text": text})
+        chars += n
+    if chunk:
+        chunks.append(chunk)
+    return chunks
+
+
+def _check_batch_size(items: List[dict]) -> None:
+    if len(items) > _MAX_BATCH:
+        raise ValueError(f"check_batch takes at most {_MAX_BATCH} items; use check_many")
+    if _chars(items) > MAX_BATCH_CHARS:
+        raise ValueError(f"check_batch takes at most {MAX_BATCH_CHARS} characters of text; use check_many")
 
 
 def _drop_none(body: Dict[str, Any]) -> Dict[str, Any]:
@@ -124,13 +156,12 @@ class Unprofane(_Base):
         return self._call("POST", "/v1/check", _drop_none({"text": text, "context": context, "policy": policy, "mode": mode, "language": language, "mask": mask, "engine": engine, "lists": lists}))
 
     def check_batch(self, items: List[dict], *, context: Optional[str] = None, policy: Optional[Policy] = None, mode: Optional[str] = None, language: Optional[str] = None, mask: Optional[str] = None, engine: Optional[str] = None, lists: Optional[dict] = None) -> dict:
-        """Up to 100 items of {id, text}, answered in order."""
-        if len(items) > _MAX_BATCH:
-            raise ValueError(f"check_batch takes at most {_MAX_BATCH} items; use check_many")
+        """Up to 100 items of {id, text}, 30,000 characters in all, answered in order."""
+        _check_batch_size(items)
         return self._call("POST", "/v1/check/batch", _drop_none({"items": items, "context": context, "policy": policy, "mode": mode, "language": language, "mask": mask, "engine": engine, "lists": lists}))
 
     def check_many(self, texts: Iterable[str], **options: Any) -> List[dict]:
-        """Any number of texts, chunked by 100, results in input order."""
+        """Any number of texts, chunked by 100 texts and 30,000 characters, results in input order."""
         out: List[dict] = []
         for chunk in _chunks(list(texts)):
             out.extend(self.check_batch(chunk, **options)["results"])
@@ -194,8 +225,7 @@ class AsyncUnprofane(_Base):
         return await self._call("POST", "/v1/check", _drop_none({"text": text, "context": context, "policy": policy, "mode": mode, "language": language, "mask": mask, "engine": engine, "lists": lists}))
 
     async def check_batch(self, items: List[dict], *, context: Optional[str] = None, policy: Optional[Policy] = None, mode: Optional[str] = None, language: Optional[str] = None, mask: Optional[str] = None, engine: Optional[str] = None, lists: Optional[dict] = None) -> dict:
-        if len(items) > _MAX_BATCH:
-            raise ValueError(f"check_batch takes at most {_MAX_BATCH} items; use check_many")
+        _check_batch_size(items)
         return await self._call("POST", "/v1/check/batch", _drop_none({"items": items, "context": context, "policy": policy, "mode": mode, "language": language, "mask": mask, "engine": engine, "lists": lists}))
 
     async def check_many(self, texts: Iterable[str], *, concurrency: int = 2, **options: Any) -> List[dict]:
