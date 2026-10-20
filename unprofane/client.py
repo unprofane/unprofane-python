@@ -13,7 +13,7 @@ from typing import Any, Dict, Iterable, List, Optional, Union
 
 import httpx
 
-__version__ = "0.1.3"
+__version__ = "0.1.4"
 _DEFAULT_BASE = "https://api.unprofane.com"
 _RETRYABLE = {429, 502, 503, 504}
 _MAX_BATCH = 100
@@ -151,14 +151,14 @@ class Unprofane(_Base):
                 continue
             raise _error(res, method, path)
 
-    def check(self, text: str, *, context: Optional[str] = None, policy: Optional[Policy] = None, mode: Optional[str] = None, language: Optional[str] = None, mask: Optional[str] = None, engine: Optional[str] = None, lists: Optional[dict] = None) -> dict:
+    def check(self, text: str, *, context: Optional[str] = None, policy: Optional[Policy] = None, mode: Optional[str] = None, language: Optional[str] = None, country: Optional[str] = None, mask: Optional[str] = None, engine: Optional[str] = None, lists: Optional[dict] = None) -> dict:
         """One text: should it be allowed, with the evidence."""
-        return self._call("POST", "/v1/check", _drop_none({"text": text, "context": context, "policy": policy, "mode": mode, "language": language, "mask": mask, "engine": engine, "lists": lists}))
+        return self._call("POST", "/v1/check", _drop_none({"text": text, "context": context, "policy": policy, "mode": mode, "language": language, "country": country, "mask": mask, "engine": engine, "lists": lists}))
 
-    def check_batch(self, items: List[dict], *, context: Optional[str] = None, policy: Optional[Policy] = None, mode: Optional[str] = None, language: Optional[str] = None, mask: Optional[str] = None, engine: Optional[str] = None, lists: Optional[dict] = None) -> dict:
+    def check_batch(self, items: List[dict], *, context: Optional[str] = None, policy: Optional[Policy] = None, mode: Optional[str] = None, language: Optional[str] = None, country: Optional[str] = None, mask: Optional[str] = None, engine: Optional[str] = None, lists: Optional[dict] = None) -> dict:
         """Up to 100 items of {id, text}, 30,000 characters in all, answered in order."""
         _check_batch_size(items)
-        return self._call("POST", "/v1/check/batch", _drop_none({"items": items, "context": context, "policy": policy, "mode": mode, "language": language, "mask": mask, "engine": engine, "lists": lists}))
+        return self._call("POST", "/v1/check/batch", _drop_none({"items": items, "context": context, "policy": policy, "mode": mode, "language": language, "country": country, "mask": mask, "engine": engine, "lists": lists}))
 
     def check_many(self, texts: Iterable[str], **options: Any) -> List[dict]:
         """Any number of texts, chunked by 100 texts and 30,000 characters, results in input order."""
@@ -221,12 +221,12 @@ class AsyncUnprofane(_Base):
                 continue
             raise _error(res, method, path)
 
-    async def check(self, text: str, *, context: Optional[str] = None, policy: Optional[Policy] = None, mode: Optional[str] = None, language: Optional[str] = None, mask: Optional[str] = None, engine: Optional[str] = None, lists: Optional[dict] = None) -> dict:
-        return await self._call("POST", "/v1/check", _drop_none({"text": text, "context": context, "policy": policy, "mode": mode, "language": language, "mask": mask, "engine": engine, "lists": lists}))
+    async def check(self, text: str, *, context: Optional[str] = None, policy: Optional[Policy] = None, mode: Optional[str] = None, language: Optional[str] = None, country: Optional[str] = None, mask: Optional[str] = None, engine: Optional[str] = None, lists: Optional[dict] = None) -> dict:
+        return await self._call("POST", "/v1/check", _drop_none({"text": text, "context": context, "policy": policy, "mode": mode, "language": language, "country": country, "mask": mask, "engine": engine, "lists": lists}))
 
-    async def check_batch(self, items: List[dict], *, context: Optional[str] = None, policy: Optional[Policy] = None, mode: Optional[str] = None, language: Optional[str] = None, mask: Optional[str] = None, engine: Optional[str] = None, lists: Optional[dict] = None) -> dict:
+    async def check_batch(self, items: List[dict], *, context: Optional[str] = None, policy: Optional[Policy] = None, mode: Optional[str] = None, language: Optional[str] = None, country: Optional[str] = None, mask: Optional[str] = None, engine: Optional[str] = None, lists: Optional[dict] = None) -> dict:
         _check_batch_size(items)
-        return await self._call("POST", "/v1/check/batch", _drop_none({"items": items, "context": context, "policy": policy, "mode": mode, "language": language, "mask": mask, "engine": engine, "lists": lists}))
+        return await self._call("POST", "/v1/check/batch", _drop_none({"items": items, "context": context, "policy": policy, "mode": mode, "language": language, "country": country, "mask": mask, "engine": engine, "lists": lists}))
 
     async def check_many(self, texts: Iterable[str], *, concurrency: int = 2, **options: Any) -> List[dict]:
         import asyncio

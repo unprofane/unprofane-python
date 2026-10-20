@@ -79,6 +79,20 @@ def test_check_batch_names_the_language():
     assert seen["body"] == {"items": [{"id": "a", "text": "aq"}], "language": "tr"}
 
 
+def test_check_and_batch_name_the_country():
+    seen = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(json.loads(request.content))
+        return httpx.Response(200, json={"results": [], "counted": 0, "allowed": True})
+
+    with Unprofane("up_test_abc", transport=transport(handler)) as client:
+        client.check("La polla del sábado", country="CL")
+        client.check_batch([{"id": "a", "text": "Que cacete!"}], country="PT")
+    assert seen[0] == {"text": "La polla del sábado", "country": "CL"}
+    assert seen[1] == {"items": [{"id": "a", "text": "Que cacete!"}], "country": "PT"}
+
+
 def test_check_many_chunks_and_keeps_order():
     def handler(request: httpx.Request) -> httpx.Response:
         items = json.loads(request.content)["items"]
